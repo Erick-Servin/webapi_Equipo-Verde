@@ -21,15 +21,14 @@ app.listen(app.get('port'), () =>{
 	console.log(`Server on port ${app.get('port')}`);
 });
 
-app.post('/api', (req,res) => {
+app.post('/webapi/interrupt', (req,res) => {
+	console.log('Post /webapi/interrupt');
 	console.log(req.body);
 	//res.json({"hola":"mundo"});
 
 	let inter = new Interruptor();
 
-	inter.pos_izq = req.body.pos_izq;
-	inter.pos_der = req.body.pos_der;
-	inter.pos_cen = req.body.pos_cen;
+	inter.Lado = req.body.Lado;
 
 	inter.save((err, inter1) =>{
 		if(err) throw err;

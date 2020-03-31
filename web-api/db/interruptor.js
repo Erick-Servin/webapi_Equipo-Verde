@@ -7,4 +7,4 @@ const InterruptSchema = Schema({
 	date: {type: Date, default: Date()}
 });
 
-module.exports = mongoose.model('inte', InterruptSchema);
+module.exports = mongoose.model('inter', InterruptSchema);

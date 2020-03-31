@@ -1,137 +1,132 @@
-#include <ArduinoJson.h>
-#include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <ESP8266WiFi.h>
+#include <ArduinoJson.h>
 
 const char* ssid = "IZZI5335";
 const char* password = "60725335";
 
-//const char* ssid = "GALAXY A7 2017";
-//const char* password = "123456789";
+#define pos1 D4
+#define pos2 D2
 
-#define pushbutton1 D2
-#define pushbutton2 D4
-
-void setup()
-{
+void setup(){
   Serial.begin(115200);
-  delay(10);
-
-  Serial.println();
-  Serial.println();
-  Serial.print("Connecting to: ");
-  Serial.println(ssid);
-
-    WiFi.mode(WIFI_STA);
+  
+  pinMode(pos1, INPUT);
+  pinMode(pos2, INPUT);
+  
+  WiFi.mode(WIFI_STA);
   WiFi.begin(ssid, password);
   
-  while (WiFi.status() != WL_CONNECTED) {
+  while (WiFi.status() != WL_CONNECTED){
     delay(500);
     Serial.print(".");
   }
-
-  Serial.println("");
-  Serial.println("WiFi connected");  
-  Serial.println("IP address: ");
+  
+  Serial.println(""); 
+  Serial.println("Direccion IP: ");
   Serial.println(WiFi.localIP());
-  
-  pinMode(pushbutton1,INPUT);
-  pinMode(pushbutton2,INPUT);
 }
 
-void loop()
-{        
-  boton_izquierdo();
-  boton_derecho();
+void loop(){
+  inter_izq();
+  inter_der();
 }
-  
-  String boton_izquierdo()
-  {
-    int estado = 0;
-    int salida = 0;
-    int estado_anterior = 0;
-    String lado = "IZQUIERDO";
-    
-    estado = digitalRead(pushbutton1);
-  
-    if((estado == HIGH) && (estado_anterior == LOW))
-    {
-      salida = 1 - salida;
-    }
-  
-    estado_anterior = estado;
-    delay(1000);
-    
-    if(salida == 1)
-    {  
-      Serial.print(lado);
-      Serial.println(F(" \n "));
-      Serial.println(F("PETICION ENVIADA"));
-      Serial.println(F(" \n "));
 
-      post(lado);
+int inter_izq(){
+  
+  int estado = 0;
+  int salida = 0;
+  int estado_ant = 0;
+  String lado_izq = "IZQUIERDO";
+  
+  estado = digitalRead(pos1);
 
-      return lado;
-    }
-      
-    else
-      {
-        Serial.print("\n .");
-      }
+  if((estado == HIGH) && (estado_ant == LOW)){
+    salida = 1 - salida;
   }
 
-  String boton_derecho()
-  {
-    int estado2 = 0;
-    int salida2 = 0;
-    int estado_anterior2 = 0;
-    String lado = "DERECHO";
-    
-    estado2 = digitalRead(pushbutton2);
-  
-    if((estado2 == HIGH) && (estado_anterior2 == LOW))
-    {
-      salida2 = 1 - salida2;
-    }
-  
-    estado_anterior2 = estado2;
-    delay(1000);
-    
-    if(salida2 == 1)
-    {  
-      Serial.print(lado);
-      Serial.println(F(" \n "));
-      Serial.println(F("PETICION ENVIADA"));
-      Serial.println(F(" \n "));
-  
-      post(lado);
+  estado_ant = estado;
+  delay(1000);
 
-      return lado;
+    if(salida == 1){   
+      Serial.println(lado_izq);
+
+      postInterIzq(lado_izq);
+    
+      //return lado_izq;
     }
-      
-    else
-      {
+    else{
         Serial.print("\n . ");
       }
+}
+
+int inter_der(){
+  
+  int estado2 = 0;
+  int salida2 = 0;
+  int estado_ant2 = 0;
+  String lado_der= "DERECHO";
+  
+  estado2 = digitalRead(pos2);
+
+  if((estado2 == HIGH) && (estado_ant2 == LOW)){
+    salida2 = 1 - salida2;
   }
 
-void post(String lado)
-{
-  HTTPClient http;
-  String json = "";
-  String server = "http://10.0.0.18:3000/api/";
-  //String server = "http://192.168.43.184:3000/api/";
-  server.concat(lado);
-  
-  StaticJsonDocument<200> doc;
-  deserializeJson(doc, json);
-  Serial.println(server);
-  http.begin(server);
+  estado_ant2 = estado2;
+  delay(1000);
 
+    if(salida2 == 1){   
+      Serial.println(lado_der);
+
+      postInterDer(lado_der);
+      
+    }
+    else{
+        Serial.print("\n . ");
+      }
+}
+
+void postInterIzq(String lado_izq){
+  
+  String server = "http://10.0.0.18:3000/webapi/interrupt";
+
+  StaticJsonBuffer<300> jsonBuffer;
+  JsonObject& JSONencoder = jsonBuffer.createObject();
+  JSONencoder["Lado"] = lado_izq;
+
+  char JSONmessageBuffer[256];
+  JSONencoder.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+  
+  HTTPClient http;
+  http.begin(server);
+  Serial.println("Insertando en -> " +server);
   http.addHeader("Content-Type", "application/json");
-  Serial.println("");
-  http.POST(json);
-  http.writeToStream(&Serial);
+
+  int httpCode = http.POST(JSONmessageBuffer);
+  String payload = http.getString();
+
   http.end();
-  Serial.println("FIN MyPost");
-  Serial.println("");
-} 
+}
+
+void postInterDer(String lado_der){
+  
+  String server = "http://10.0.0.18:3000/webapi/interrupt";
+
+  StaticJsonBuffer<300> jsonBuffer;
+  JsonObject& JSONencoder = jsonBuffer.createObject();
+  JSONencoder["Lado"] = lado_der;
+
+  char JSONmessageBuffer[256];
+  JSONencoder.prettyPrintTo(JSONmessageBuffer, sizeof(JSONmessageBuffer));
+  
+  HTTPClient http;
+  http.begin(server);
+  Serial.println("Insertando en -> " +server);
+  http.addHeader("Content-Type", "application/json");
+
+  int httpCode = http.POST(JSONmessageBuffer);
+  String payload = http.getString();
+  
+  http.end();
+}
